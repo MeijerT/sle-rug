@@ -12,25 +12,125 @@ start syntax Form
 
 // TODO: question, computed question, block, if-then-else, if-then
 syntax Question
-  = 
+  = Str string Id identifier ":" Type type
+  | Str string Id identifier ":" Type type "=" Expr3 expr //computed question
+  | "if ("Expr3 expression") {" Block "}"
   ; 
+
+syntax Block
+  = Question*
+  | Question* "} else {" Block "}"
+  ;
 
 // TODO: +, -, *, /, &&, ||, !, >, <, <=, >=, ==, !=, literals (bool, int, str)
 // Think about disambiguation using priorities and associativity
 // and use C/Java style precedence rules (look it up on the internet)
 syntax Expr 
-  = Id \ "true" \ "false" // true/false are reserved keywords.
+  = Term 
+  | AddExpr
+  | AndExpr
+  | "!"Expr
   ;
   
+syntax Expr3
+  = Primary
+  | "!" Primary
+  | Primary "&&" Primary
+  | Primary "||" Primary
+  | Primary "+" Primary
+  | Primary "-" Primary
+  | Primary "/" Primary
+  | Primary "*" Primary
+  | Primary "\>" Primary
+  | Primary "\<" Primary
+  | Primary "\<=" Primary
+  | Primary "\>=" Primary
+  | Primary "==" Primary
+  | Primary "!=" Primary
+  ;
+
+syntax Expr2
+  = LogicExpr
+  | AddExpr
+  ;
+
+syntax LogicExpr
+  = Bool
+  | "!" LogicExpr
+  | ComExpr
+  | OrExpr
+  ;
+
+syntax OrExpr
+  = ComExpr
+  | OrExpr "||" AndExpr
+  ;
+
+syntax AndExpr
+  = OrExpr 
+  | AndExpr "&&" OrExpr
+  ;
+  
+syntax ComExpr
+  = Primary "\>" Primary
+  | "||" Term Expr1
+  | "\>" Term Expr1
+  | "\<" Term Expr1
+  | "\<=" Term Expr1
+  | "\>=" Term Expr1
+  | "==" Term Expr1
+  | "!=" Term Expr1
+  ;
+  
+syntax AddExpr
+  = MulExpr
+  | AddExpr "+" MulExpr
+  | AddExpr "-" MulExpr
+  ;
+
+syntax MulExpr
+  = Expr
+  | Expr "*" MulExpr
+  | Expr "/" MulExpr
+  ;
+  
+syntax Primary
+  = Bool
+  | Int
+  | Str
+  | Id \ "true" \ "false" // true/false are reserved keywords.
+  ;
+/*
+syntax Term
+  = Expr Term1
+  ;
+   
+syntax Expr1
+  = "+" Term Expr1 
+  | "-" Term Expr1
+  | "||" Term Expr1
+  | "\>" Term Expr1
+  | "\<" Term Expr1
+  | "\<=" Term Expr1
+  | "\>=" Term Expr1
+  | "==" Term Expr1
+  | "!=" Term Expr1
+  | ""
+  ;
+
+syntax Term1
+  = "*" Expr Term1
+  | "/" Expr Term1
+  | "&&" Expr Term1
+  | ""
+  ;
+*/ 
 syntax Type
   = "boolean" | "integer";  
   
-lexical Str = "\".*\"";
+lexical Str = "\""![\n\"]*"\"";
 
 lexical Int 
   = [0-9]+;
 
-lexical Bool = ;
-
-
-
+lexical Bool = "true" | "false";
