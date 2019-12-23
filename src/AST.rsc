@@ -12,28 +12,45 @@ data AForm(loc src = |tmp:///|)
   ; 
 
 data AQuestion(loc src = |tmp:///|)
-  = question(str q, AId, AExpr)
-  | question(str q, AId, AType)
+  = question(str q, AId, AType)
+  | compquestion(str q, AId, AType, AExpr)
+  | ifquestion(AExpr check, ABlock block)
   ; 
 
-data AExpr(loc src = |tmp:///|)
-  = ref(AId id)
+data ABlock(loc src = |tmp:///|)
+  = ifblock(list[AQuestion] questions)
+  | ifelseblock(list[AQuestion] \if, list[AQuestion] \else) 
   ;
 
-data AId(loc src = |tmp:///|)
-  = id(str name);
+data AExpr(loc src = |tmp:///|) //can we leave bracket?
+  = ref(AId id)
+  | \bool(ABool boolean)
+  | \int(AInt integer)
+  | notExpr(AExpr e) //"!"Expr
+  | negExpr(AExpr e) //"-" Expr
+  | mul(AExpr lhs, AExpr rhs)
+  | div(AExpr lhs, AExpr rhs)
+  | add(AExpr lhs, AExpr rhs)
+  | sub(AExpr lhs, AExpr rhs)
+  | gt(AExpr lhs, AExpr rhs)
+  | lt(AExpr lhs, AExpr rhs)
+  | leq(AExpr lhs, AExpr rhs)
+  | geq(AExpr lhs, AExpr rhs)
+  | eq(AExpr lhs, AExpr rhs)
+  | neq(AExpr lhs, AExpr rhs)
+  | and(AExpr lhs, AExpr rhs)
+  | or(AExpr lhs, AExpr rhs)
+  ;
 
-data AType(loc src = |tmp:///|);
+data AId = id(str name, loc src = |tmp:///|);
+data AInt = \int(int integer, loc src = |tmp:///|);
 
-AForm implode(start[Form] f)
-  = implode(f.top);
+data AType(loc src = |tmp:///|)
+  = \type(str name);
 
-AForm implode((Form)`form <Id name> <Question* qs>`)
-  = form("<name>", [ implode(q) | Question q <- qs ]);
+data ABool(loc src = |tmp:///|)
+  = \bool(str boolean);
 
-AQuestion implode((Question)`state <Id quest> <Expr e>`)
-  = question(id("<name>", src=name@\loc), implode(e));
-
-AExpr implode((Expr)`ex <Expr lhs> <Opr op> <Expr rhs>`)
-  = expr("<e>");
-  
+/*data AInt(loc src = |tmp:///|)
+  = \int(str integer);*///hangt af van cst2ast
+   

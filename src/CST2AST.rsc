@@ -18,23 +18,59 @@ import String;
 
 AForm cst2ast(start[Form] sf) {
   Form f = sf.top; // remove layout before and after form
-  return form("", [], src=f@\loc); 
+  return form("<f.name>", [cst2ast(q) | q <- f.qs], src=f@\loc); 
 }
 
 AQuestion cst2ast(Question q) {
-  throw "Not yet implemented";
+  switch (q) {
+    case (Question)`<Qs q> <Id name> : <Type \type>`: return question(cst2ast(q), cst2ast(name), cst2ast(\type));
+    case (Question)`<Qs q> <Id name> : <Type \type> = <Expr e>`: return compquestion(cst2ast(q), cst2ast(name), cst2ast(\type), cst2ast(e));
+    case (Question) `if <Expr e> { <Block b> }`: return ifquestion(cst2ast(e), cst2ast(b));
+    default: throw "Unhandled expression: <e>";
+  }
+}
+
+ABlock cst2ast(Block b) {
+  switch (b) {
+  	case (Block) `<Question* qs>`: return ifblock([cst2ast(q) | q <- qs]); //list of questions??
+  	case (Block) `<Question* ifpart> } else { <Question* elsepart>`: return ifelseblock([cst2ast(q) | q <- ifpart], [cst2ast(q) | q <- elsepart]);
+  }
 }
 
 AExpr cst2ast(Expr e) {
   switch (e) {
     case (Expr)`<Id x>`: return ref("<x>", src=x@\loc);
-    
-    // etc.
-    
+    case (Expr) `!<Expr e>`: return notExpr(cst2ast(e));
+    case (Expr) `-<Expr e>`: return negExpr(cst2ast(e));
+    case (Expr) `<Expr lhs> + <Expr rhs>`: return add(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> - <Expr rhs>`: return sub(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> * <Expr rhs>`: return mul(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> / <Expr rhs>`: return div(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> \< <Expr rhs>`: return lt(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> \> <Expr rhs>`: return gt(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> \<= <Expr rhs>`: return leq(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> \>= <Expr rhs>`: return geq(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> == <Expr rhs>`: return eq(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> != <Expr rhs>`: return neq(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> && <Expr rhs>`: return and(cst2ast(lhs), cst2ast(rhs));
+    case (Expr) `<Expr lhs> || <Expr rhs>`: return or(cst2ast(lhs), cst2ast(rhs));
     default: throw "Unhandled expression: <e>";
   }
 }
 
 AType cst2ast(Type t) {
-  throw "Not yet implemented";
+  switch (t) {
+    case (Type) `boolean`: return \type("boolean");
+    case (Type) `integer`: return \type("integer");
+    default: throw "Unhandled expression: <e>";
+  }
 }
+
+ABool cst2ast(Bool b) {
+  switch (b) {
+    case (Bool) `true`: return \type("true");
+    case (Bool) `false`: return \type("false");
+    default: throw "Unhandled expression: <e>";
+  }
+}
+

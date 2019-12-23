@@ -23,10 +23,10 @@ void compile(AForm f) {
   writeFile(f.src[extension="html"].top, toString(form2html(f)));
 }
 
-HTML5Node form2html(AForm f) {
+HTML5Node form2html(AForm f) { 
   return html();
 }
 
-str form2js(AForm f) {
+str form2js(AForm f) { //string templates
   return "";
 }
