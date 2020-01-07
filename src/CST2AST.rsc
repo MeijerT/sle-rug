@@ -39,7 +39,7 @@ ABlock cst2ast(Block b) {
 
 AExpr cst2ast(Expr e) {
   switch (e) {
-    case (Expr)`<Id x>`: return ref("<x>", src=x@\loc);
+    case (Expr)`<Id x>`: return ref(id("<x>", src=x@\loc), src=x@\loc);
     case (Expr) `!<Expr e>`: return notExpr(cst2ast(e));
     case (Expr) `-<Expr e>`: return negExpr(cst2ast(e));
     case (Expr) `<Expr lhs> + <Expr rhs>`: return add(cst2ast(lhs), cst2ast(rhs));
