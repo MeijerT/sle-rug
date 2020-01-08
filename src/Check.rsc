@@ -19,10 +19,10 @@ alias TEnv = rel[loc def, str name, str label, Type \type];
 TEnv collect(AForm f) {
   return {
   	for (/question(str q, AId i, AType t) := f) {
-  	  append [|tmp:///|, i.name, q, t.name];
+  	  append [i.src, i.name, q, t.name];
   	}
   	for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
-  	  append [|tmp:///|, i.name, q, t.name];
+  	  append [i.src, i.name, q, t.name];
   	}
   };
 }
@@ -31,12 +31,12 @@ set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   for (/question(str q, AId i, AType t) := f) {
   	  append [|tmp:///|, i.name, q, t.name];
-  	}
-  	for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
-  	  println("hallo");
-  	  msgs += checkQuestion(/question(str q, AId i, AType t), tenv, useDef);
-  	  append [|tmp:///|, i.name, q, t.name];
-  	}
+  }
+  for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
+  	 println("hallo");
+  	 //msgs += checkQuestion(/question(q, i, t), tenv, useDef);
+  	 //append [|tmp:///|, i.name, q, t.name];
+  }
   /*for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
   	msgs += {checkQuestion(/question(str q, AId i, AType t), tenv, useDef)};
   }*/
@@ -51,12 +51,15 @@ set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
 set[Message] checkQuestion(AQuestion q, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   
+  // duplicate labels
   switch(q) {
     case /question(str label, AId aid, AType at):
       msgs += dupl(tenv, useDef, label, q.src);
     case /compquestion(str label, AId aid, AType at, AExpr ae):
       msgs += duplcomp(tenv, useDef, label, q.src, at, ae);
   };
+  
+  
   
   return msgs;
 }
@@ -69,7 +72,7 @@ set[Message] dupl(TEnv tenv, UseDef useDef, str label, loc q) {
   return {};
 }
 
-set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AType at, AExpr ae) {
+set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId, ai, AType at, AExpr ae) {
   set[Message] msgs = {};
   list[loc] labeloccs = [d | <d, _, l, _> <- tenv, l == label];
   if (length(labeloccs) > 1) {
@@ -82,6 +85,7 @@ set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AType at, AExp
    
   // produce an error if there are declared questions with the same name but different types.
   [d | <d, _, l, _> <- tenv, l == label];
+  msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai == n, at != t};
   return msgs;
 }
 

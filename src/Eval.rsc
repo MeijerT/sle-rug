@@ -27,7 +27,22 @@ data Input
 // produce an environment which for each question has a default value
 // (e.g. 0 for int, "" for str etc.)
 VEnv initialEnv(AForm f) {
-  return ();
+  map[str name, Value \value] m = ();
+  for (/question(str q, AId i, AType t) := f) {
+    if (t.name == "integer") {
+      m = (i.name:\vint(0)) + m;
+    } else {
+      m = (i.name:\vbool("false")) + m;
+    }
+  }
+  for (/compquestion(str q, AId i, AType t, AExpr ae) := f) {
+    if (t.name == "integer") {
+      m = (i.name:\vint(0)) + m;
+    } else {
+      m = (i.name:\vbool("false")) + m;
+    }
+  }
+  return m;
 }
 
 
@@ -40,13 +55,13 @@ VEnv eval(AForm f, Input inp, VEnv venv) {
 }
 
 VEnv evalOnce(AForm f, Input inp, VEnv venv) {
-  return (); 
+  return ();
 }
 
 VEnv eval(AQuestion q, Input inp, VEnv venv) {
   // evaluate conditions for branching,
   // evaluate inp and computed questions to return updated VEnv
-  return (); 
+  return ();
 }
 
 Value eval(AExpr e, VEnv venv) {

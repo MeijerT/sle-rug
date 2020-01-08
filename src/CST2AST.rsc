@@ -23,8 +23,8 @@ AForm cst2ast(start[Form] sf) {
 
 AQuestion cst2ast(Question q) {
   switch (q) {
-    case (Question)`<Qs q> <Id name> : <Type \type>`: return question(cst2ast(q), cst2ast(name), cst2ast(\type));
-    case (Question)`<Qs q> <Id name> : <Type \type> = <Expr e>`: return compquestion(cst2ast(q), cst2ast(name), cst2ast(\type), cst2ast(e));
+    case (Question)`<Str q> <Id x> : <Type t>`: return question(q, x, cst2ast(t));
+    case (Question)`<Str q> <Id x> : <Type t> = <Expr e>`: return compquestion(cst2ast(q), x, cst2ast(t), cst2ast(e));
     case (Question) `if <Expr e> { <Block b> }`: return ifquestion(cst2ast(e), cst2ast(b));
     default: throw "Unhandled expression: <e>";
   }
@@ -73,4 +73,3 @@ ABool cst2ast(Bool b) {
     default: throw "Unhandled expression: <e>";
   }
 }
-
