@@ -12,8 +12,8 @@ start syntax Form
 
 // TODO: question, computed question, block, if-then-else, if-then
 syntax Question
-  = Str string Id name ":" Type type
-  | Str string Id name ":" Type type "=" Expr expr //computed question
+  = Str string Id name ":" Type t
+  | Str string Id name ":" Type t "=" Expr expr //computed question
   | "if ("Expr expression") {" Block block "}"
   ; 
 

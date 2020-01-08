@@ -32,14 +32,14 @@ VEnv initialEnv(AForm f) {
     if (t.name == "integer") {
       m = (i.name:\vint(0)) + m;
     } else {
-      m = (i.name:\vbool("false")) + m;
+      m = (i.name:\vbool(false)) + m;
     }
   }
   for (/compquestion(str q, AId i, AType t, AExpr ae) := f) {
     if (t.name == "integer") {
       m = (i.name:\vint(0)) + m;
     } else {
-      m = (i.name:\vbool("false")) + m;
+      m = (i.name:\vbool(false)) + m;
     }
   }
   return m;
@@ -68,7 +68,39 @@ Value eval(AExpr e, VEnv venv) {
   switch (e) {
     case ref(str x): return venv[x];
     
-    // etc.
+    case notExpr(AExpr e): 
+    	if(eval(e, venv).b) { 
+    	  return vbool(false); 
+    	} else {
+    	  return vbool(true);
+    	}
+      
+    case negExpr(AExpr e): return vint(eval(e, venv).n * -1);
+      
+    case mul(AExpr lhs, AExpr rhs): return vint(eval(lhs, venv).n * eval(rhs, venv).n);
+      
+    case div(AExpr lhs, AExpr rhs): return vint(eval(lhs, venv).n / eval(rhs, venv).n);
+      
+    case add(AExpr lhs, AExpr rhs): return vint(eval(lhs, venv).n + eval(rhs, venv).n);
+      
+    case sub(AExpr lhs, AExpr rhs): return vint(eval(lhs, venv).n - eval(rhs, venv).n);
+      
+    
+    case gt(AExpr lhs, AExpr rhs): return vbool(eval(lhs, venv).n > eval(rhs,venv).n);
+      
+    case lt(AExpr lhs, AExpr rhs): return vbool(eval(lhs, venv).n > eval(rhs,venv).n);
+      
+    case leq(AExpr lhs, AExpr rhs): return vbool(eval(lhs, venv).n <= eval(rhs,venv).n);
+      
+    case geq(AExpr lhs, AExpr rhs): return vbool(eval(lhs, venv).n >= eval(rhs,venv).n);
+      
+    case eq(AExpr lhs, AExpr rhs): return vbool(eval(lhs, venv).n == eval(rhs,venv).n);
+      
+    case neq(AExpr lhs, AExpr rhs): return vbool(eval(lhs, venv).n != eval(rhs,venv).n);
+      
+    case and(AExpr lhs, AExpr rhs): return vbool(eval(lhs, venv).b && eval(rhs, venv).b);
+      
+    case or(AExpr lhs, AExpr rhs): return vbool(eval(lhs, venv).b || eval(rhs, venv).b);
     
     default: throw "Unsupported expression <e>";
   }
