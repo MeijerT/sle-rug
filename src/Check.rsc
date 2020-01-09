@@ -30,16 +30,11 @@ TEnv collect(AForm f) {
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   for (/question(str q, AId i, AType t) := f) {
-  	  append [|tmp:///|, i.name, q, t.name];
+  	  msgs += check(question(q, i, t), tenv, useDef);
   }
   for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
-  	 println("hallo");
-  	 //msgs += checkQuestion(/question(q, i, t), tenv, useDef);
-  	 //append [|tmp:///|, i.name, q, t.name];
+  	 msgs += check(question(q, i, t), tenv, useDef);
   }
-  /*for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
-  	msgs += {checkQuestion(/question(str q, AId i, AType t), tenv, useDef)};
-  }*/
   // produce an error if there are declared questions with the same name but different types.
 
   return msgs;
@@ -48,14 +43,14 @@ set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
 // - produce an error if there are declared questions with the same name but different types.
 // - duplicate labels should trigger a warning 
 // - the declared type computed questions should match the type of the expression.
-set[Message] checkQuestion(AQuestion q, TEnv tenv, UseDef useDef) {
+set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   
   // duplicate labels
   switch(q) {
-    case /question(str label, AId aid, AType at):
-      msgs += dupl(tenv, useDef, label, q.src);
-    case /compquestion(str label, AId aid, AType at, AExpr ae):
+    case question(str label, AId aid, AType at):
+      msgs += dupl(tenv, useDef, label, q.src, ai, at);
+    case compquestion(str label, AId aid, AType at, AExpr ae):
       msgs += duplcomp(tenv, useDef, label, q.src, at, ae);
   };
   
@@ -64,12 +59,14 @@ set[Message] checkQuestion(AQuestion q, TEnv tenv, UseDef useDef) {
   return msgs;
 }
 
-set[Message] dupl(TEnv tenv, UseDef useDef, str label, loc q) {
+set[Message] dupl(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType at) {
+  set[Message] msgs = {};
   list[loc] labeloccs = [d | <d, _, l, _> <- tenv, l == label];
   if (length(labeloccs) > 1) {
-    return { warning("Duplicate question", q) };
+    msgs += warning("Duplicate question", q);
   }
-  return {};
+  msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai == n, at != t};
+  return msgs;
 }
 
 set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId, ai, AType at, AExpr ae) {
@@ -84,7 +81,7 @@ set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId, ai, AType
    || (at.name == "boolean" && typeOf(ae, tenv, useDef) != tbool()) };
    
   // produce an error if there are declared questions with the same name but different types.
-  [d | <d, _, l, _> <- tenv, l == label];
+  //[d | <d, _, l, _> <- tenv, l == label];
   msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai == n, at != t};
   return msgs;
 }
@@ -141,25 +138,6 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
       msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
       + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
   }
-
- /* etc.
-  | \int(AInt integer)
-  | notExpr(AExpr e) //"!"Expr
-  | negExpr(AExpr e) //"-" Expr
-  | mul(AExpr lhs, AExpr rhs)
-  | div(AExpr lhs, AExpr rhs)
-  | add(AExpr lhs, AExpr rhs)
-  | sub(AExpr lhs, AExpr rhs)
-  | gt(AExpr lhs, AExpr rhs)
-  | lt(AExpr lhs, AExpr rhs)
-  | leq(AExpr lhs, AExpr rhs)
-  | geq(AExpr lhs, AExpr rhs)
-  | eq(AExpr lhs, AExpr rhs)
-  | neq(AExpr lhs, AExpr rhs)
-  | and(AExpr lhs, AExpr rhs)
-  | or(AExpr lhs, AExpr rhs)
-  }
-  */
   
   return msgs; 
 }

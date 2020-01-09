@@ -54,14 +54,45 @@ VEnv eval(AForm f, Input inp, VEnv venv) {
   }
 }
 
-VEnv evalOnce(AForm f, Input inp, VEnv venv) {
+VEnv evalOnce(AForm f, Input inp, VEnv venv) {//not sure what we need to do here
   return ();
 }
 
 VEnv eval(AQuestion q, Input inp, VEnv venv) {
   // evaluate conditions for branching,
   // evaluate inp and computed questions to return updated VEnv
-  return ();
+  map[str name, Value \value] m = ();
+  switch(q) {
+    case /question(str label, AId aid, AType at):
+      if(at.name == "integer") {
+      	m = (aid.name : inp.\value.n) + m;
+      } else {
+      	//boolean
+      	m = (aid.name : inp.\value.b) + m;
+      }
+    case /compquestion(str label, AId aid, AType at, AExpr ae):
+    	if(at.name == "integer") {
+      	m = (aid.name : eval(ae, venv).\value.n) + m;
+      } else {
+      	m = (aid.name : eval(ae, venv).\value.b) + m;
+      }
+    case ifquestion(AExpr ae, ABlock b):
+      if (eval(ae, venv).b) {
+      	switch(b) {
+      	  case ifblock(list[AQuestion] questions): 
+      	  	if(eval(ae, venv).b) {
+      	  	  m = ( eval(qn, inp, venv).name :  eval(qn, inp, venv).\value | qn <- questions ) + m;
+      	  	}
+      	  case ifelseblock(list[AQuestion] \if, list[AQuestion] \else): 
+      	    if(eval(ae, venv).b) {
+      	  	  m = ( eval(qn, inp, venv).name : eval(qn, inp, venv).\value | qn <- \if ) + m;
+      	  	} else { 
+      	  	  m = ( eval(qn, inp, venv).name : eval(qn, inp, venv).\value | qn <- \else ) + m;
+      	  	}
+      	}
+      }
+  };
+  return m;
 }
 
 Value eval(AExpr e, VEnv venv) {

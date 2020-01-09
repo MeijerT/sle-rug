@@ -12,8 +12,8 @@ data AForm(loc src = |tmp:///|)
   ; 
 
 data AQuestion(loc src = |tmp:///|)
-  = question(str q, AId, AType)
-  | compquestion(str q, AId, AType, AExpr)
+  = question(str q, AId ai, AType at)
+  | compquestion(str q, AId ai, AType at, AExpr ae)
   | ifquestion(AExpr check, ABlock block)
   ; 
 
@@ -42,8 +42,8 @@ data AExpr(loc src = |tmp:///|) //can we leave bracket?
   | or(AExpr lhs, AExpr rhs)
   ;
 
-data AId = id(str name, loc src = |tmp:///|);
-data AInt = \int(int integer, loc src = |tmp:///|);
+data AId(loc src = |tmp:///|) = id(str name);
+data AInt(loc src = |tmp:///|) = \int(int integer);
 
 data AType(loc src = |tmp:///|)
   = \type(str name);
