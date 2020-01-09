@@ -4,6 +4,8 @@ import AST;
 import Resolve;
 import Message; // see standard library
 
+import List;
+
 data Type
   = tint()
   | tbool()
@@ -12,25 +14,25 @@ data Type
   ;
 
 // the type environment consisting of defined questions in the form 
-alias TEnv = rel[loc def, str name, str label, Type \type];
+alias TEnv = rel[loc def, str name, str label, AType \type];//changed to AType
 
 // To avoid recursively traversing the form, use the `visit` construct
 // or deep match (e.g., `for (/question(...) := f) {...}` ) 
 TEnv collect(AForm f) {
-  return {
-  	for (/question(str q, AId i, AType t) := f) {
-  	  append [i.src, i.name, q, t.name];
-  	}
-  	for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
-  	  append [i.src, i.name, q, t.name];
-  	}
-  };
+  rel[loc def, str name, str label, AType \type] r = {};
+  for (/question(str q, AId i, AType t) := f) {
+  	r += {<i.src, i.name, q, t>};
+  }
+  for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
+  	r += {<i.src, i.name, q, t>};
+  }
+  return r;
 }
 
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   for (/question(str q, AId i, AType t) := f) {
-  	  msgs += check(question(q, i, t), tenv, useDef);
+  	msgs += check(question(q, i, t), tenv, useDef);
   }
   for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
   	 msgs += check(question(q, i, t), tenv, useDef);
@@ -49,7 +51,7 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
   // duplicate labels
   switch(q) {
     case question(str label, AId aid, AType at):
-      msgs += dupl(tenv, useDef, label, q.src, ai, at);
+      msgs += dupl(tenv, useDef, label, q.src, aid, at);
     case compquestion(str label, AId aid, AType at, AExpr ae):
       msgs += duplcomp(tenv, useDef, label, q.src, at, ae);
   };
@@ -62,7 +64,7 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
 set[Message] dupl(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType at) {
   set[Message] msgs = {};
   list[loc] labeloccs = [d | <d, _, l, _> <- tenv, l == label];
-  if (length(labeloccs) > 1) {
+  if (size(labeloccs) > 1) {
     msgs += warning("Duplicate question", q);
   }
   msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai == n, at != t};

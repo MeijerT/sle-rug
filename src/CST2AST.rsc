@@ -23,8 +23,8 @@ AForm cst2ast(start[Form] sf) {
 
 AQuestion cst2ast(Question q) {
   switch (q) {
-    case (Question)`<Str q1> <Id x> : <Type t>`: return question(q1, id(x.name), cst2ast(t));
-    case (Question)`<Str q1> <Id x> : <Type t> = <Expr e>`: return compquestion(q1, x, cst2ast(t), cst2ast(e));
+    case (Question)`<Str q1> <Id x> : <Type t>`: return question("<q1>", id("<x>", src=x@\loc), cst2ast(t));
+    case (Question)`<Str q1> <Id x> : <Type t> = <Expr e>`: return compquestion("<q1>", id("<x>", src=x@\loc), cst2ast(t), cst2ast(e));
     case (Question) `if (<Expr e>) { <Block b> }`: return ifquestion(cst2ast(e), cst2ast(b));
     default: throw "Unhandled expression: <e>";
   }
@@ -32,14 +32,18 @@ AQuestion cst2ast(Question q) {
 
 ABlock cst2ast(Block b) {
   switch (b) {
-  	case (Block) `<Question* qs>`: return ifblock([cst2ast(q) | q <- qs]); //list of questions??
   	case (Block) `<Question* ifpart> } else { <Question* elsepart>`: return ifelseblock([cst2ast(q) | q <- ifpart], [cst2ast(q) | q <- elsepart]);
+  	case (Block) `<Question* qs>`: return ifblock([cst2ast(q) | q <- qs]); //list of questions??
+  	default: throw "Unhandled expression: <e>";
   }
 }
 
 AExpr cst2ast(Expr e) {
   switch (e) {
-    case (Expr)`<Id x>`: return ref(id("<x>", src=x@\loc), src=x@\loc);
+    case (Expr) `<Int i>` : return \int(\int(toInt("<i>")));
+    case (Expr) `<Id x>`: return ref(id("<x>", src=x@\loc), src=x@\loc);
+    case (Expr) `<Bool b>`: return \bool(\bool("<b>"));
+    case (Expr) `(<Expr e>)`: return B(cst2ast(e));
     case (Expr) `!<Expr e>`: return notExpr(cst2ast(e));
     case (Expr) `-<Expr e>`: return negExpr(cst2ast(e));
     case (Expr) `<Expr lhs> + <Expr rhs>`: return add(cst2ast(lhs), cst2ast(rhs));

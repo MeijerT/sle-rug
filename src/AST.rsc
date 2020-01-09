@@ -26,6 +26,7 @@ data AExpr(loc src = |tmp:///|) //can we leave bracket?
   = ref(AId id)
   | \bool(ABool boolean)
   | \int(AInt integer)
+  | B(AExpr e)
   | notExpr(AExpr e) //"!"Expr
   | negExpr(AExpr e) //"-" Expr
   | mul(AExpr lhs, AExpr rhs)

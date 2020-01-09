@@ -19,7 +19,7 @@ syntax Question
 
 syntax Block
   = Question* thenpart
-  | Question* ifpart"} else {" Block elsepart
+  | Question* ifpart"}" "else" "{" Block elsepart
   ;
 
 // TODO: +, -, *, /, &&, ||, !, >, <, <=, >=, ==, !=, literals (bool, int, str)
@@ -29,7 +29,7 @@ syntax Expr
   = id: Id i \ "true" \ "false"
   | \bool: Bool b//??
   | \int: Int integer
-  | bracket "("Expr e")"
+  | bracket B: "("Expr e")"
   | neg: "-"Expr e
   | not: "!"Expr e
   > left (mul: Expr lhs "*" Expr rhs| div: Expr lhs "/" Expr rhs)

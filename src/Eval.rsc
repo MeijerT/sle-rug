@@ -63,14 +63,14 @@ VEnv eval(AQuestion q, Input inp, VEnv venv) {
   // evaluate inp and computed questions to return updated VEnv
   map[str name, Value \value] m = ();
   switch(q) {
-    case /question(str label, AId aid, AType at):
+    case question(str label, AId aid, AType at):
       if(at.name == "integer") {
       	m = (aid.name : inp.\value.n) + m;
       } else {
       	//boolean
       	m = (aid.name : inp.\value.b) + m;
       }
-    case /compquestion(str label, AId aid, AType at, AExpr ae):
+    case compquestion(str label, AId aid, AType at, AExpr ae):
     	if(at.name == "integer") {
       	m = (aid.name : eval(ae, venv).\value.n) + m;
       } else {
