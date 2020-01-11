@@ -49,7 +49,7 @@ syntax Primary
   ;
  
 syntax Type
-  = "boolean" | "integer";  
+  = "boolean" | "integer" | "string";  
   
 lexical Str = "\""![\n\"]*"\"";
 

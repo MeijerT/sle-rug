@@ -3,6 +3,7 @@ module Check
 import AST;
 import Resolve;
 import Message; // see standard library
+import IO;
 
 import List;
 
@@ -31,11 +32,23 @@ TEnv collect(AForm f) {
 
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
-  for (/question(str q, AId i, AType t) := f) {
-  	msgs += check(question(q, i, t), tenv, useDef);
+  //print("Regular questions:\n");
+  for (/question(str q, AId ai, AType at) := f) {
+    //print(q + "\n");
+  	msgs += dupl(tenv, useDef, q, ai.src, ai, at);
   }
-  for (/compquestion(str q, AId i, AType t, AExpr e) := f) {
-  	 msgs += check(question(q, i, t), tenv, useDef);
+  //print("Computed questions:\n");
+  for (/compquestion(str q, AId ai, AType at, AExpr ae) := f) {
+    //print(q + "\n");
+    msgs += duplcomp(tenv, useDef, q, ai.src, ai, at, ae);
+  }
+  
+  for (/ifquestion(AExpr ae, ABlock _) := f) {
+    //print(q + "\n");
+    Type ae_type = typeOf(ae, tenv, useDef);
+    if (ae_type != tbool()) {
+      msgs += {error("Expected boolean expression, but got something else", ae.src)};
+    }
   }
   // produce an error if there are declared questions with the same name but different types.
 
@@ -56,12 +69,11 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
       msgs += duplcomp(tenv, useDef, label, q.src, at, ae);
   };
   
-  
-  
   return msgs;
 }
 
 set[Message] dupl(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType at) {
+  //print("Checking duplicates for a regular question\n");
   set[Message] msgs = {};
   list[loc] labeloccs = [d | <d, _, l, _> <- tenv, l == label];
   if (size(labeloccs) > 1) {
@@ -71,20 +83,23 @@ set[Message] dupl(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType at) 
   return msgs;
 }
 
-set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId, ai, AType at, AExpr ae) {
+set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType at, AExpr ae) {
+  //print("Checking duplicates for a computed question\n");
   set[Message] msgs = {};
   list[loc] labeloccs = [d | <d, _, l, _> <- tenv, l == label];
-  if (length(labeloccs) > 1) {
-    msgs += { warning("Duplicate question", q)};
+  if (size(labeloccs) > 1) {
+    msgs += {warning("Duplicate question", q)};
   }
   //the declared type computed questions should match the type of the expression.
-  msgs += {error("type of question does not match type of expression", q)
+  msgs += {error("Type of question does not match type of expression", ai.src)
    | (at.name == "integer" && typeOf(ae, tenv, useDef) != tint())
    || (at.name == "boolean" && typeOf(ae, tenv, useDef) != tbool()) };
    
   // produce an error if there are declared questions with the same name but different types.
   //[d | <d, _, l, _> <- tenv, l == label];
   msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai == n, at != t};
+  
+  msgs += check(ae, tenv, useDef);
   return msgs;
 }
 
@@ -148,7 +163,16 @@ Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
   switch (e) {
     case ref(str x, src = loc u):  
       if (<u, loc d> <- useDef, <d, x, _, Type t> <- tenv) {
-        return t;
+        if (t == "boolean") {
+        	return tbool();
+        } else if (t == "integer") {
+        	return tint();
+        } else if (t == "string") {
+        	return tstr();
+        };
+        return tunkown();
+      } else {
+        return tunknown();
       }
     // etc.
     case \bool(ABool b):
@@ -157,36 +181,88 @@ Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
       return tint();
     
     case notExpr(AExpr e):
-      return tbool();
+      return TypeOf(e);
     case negExpr(AExpr e):
-      return tint();
+      return TypeOf(e);
     case mul(AExpr lhs, AExpr rhs):
-      return tint();
+      if (TypeOf(lhs) == tint() && TypeOf(rhs) == tint()) {
+      	println(rhs);
+      	return tint();
+      } else {
+      	println("Expected int but wasn\'t");
+      	println(rhs);
+        return tunknown();
+      }
     case div(AExpr lhs, AExpr rhs):
-      return tint();
+      if (TypeOf(lhs) == tint() && TypeOf(rhs) == tint()) {
+      	return tint();
+      } else {
+        return tunknown();
+      }
     case add(AExpr lhs, AExpr rhs):
-      return tint();
+      if (TypeOf(lhs) == tint() && TypeOf(rhs) == tint()) {
+      	return tint();
+      } else {
+        return tunknown();
+      }
     case sub(AExpr lhs, AExpr rhs):
-      return tint();
+      if (TypeOf(lhs) == tint() && TypeOf(rhs) == tint()) {
+      	return tint();
+      } else {
+        return tunknown();
+      }
     
     case gt(AExpr lhs, AExpr rhs):
-      return tbool();
+      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      	return tbool();
+      } else {
+        return tunknown();
+      }
     case lt(AExpr lhs, AExpr rhs):
-      return tbool();
+      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      	return tbool();
+      } else {
+        return tunknown();
+      }
     case leq(AExpr lhs, AExpr rhs):
-      return tbool();
+      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      	return tbool();
+      } else {
+        return tunknown();
+      }
     case geq(AExpr lhs, AExpr rhs):
-      return tbool();
+      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      	return tbool();
+      } else {
+        return tunknown();
+      }
     case eq(AExpr lhs, AExpr rhs):
-      return tbool();
+      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      	return tbool();
+      } else {
+        return tunknown();
+      }
     case neq(AExpr lhs, AExpr rhs):
-      return tbool();
+      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      	return tbool();
+      } else {
+        return tunknown();
+      }
     case and(AExpr lhs, AExpr rhs):
-      return tbool();
+      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      	return tbool();
+      } else {
+        return tunknown();
+      }
     case or(AExpr lhs, AExpr rhs):
-      return tbool();
+      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      	return tbool();
+      } else {
+        return tunknown();
+      }
+    default:
+      return tunknown();
   }
-  return tunknown(); 
 }
 
 /* 
