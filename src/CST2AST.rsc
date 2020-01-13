@@ -40,7 +40,7 @@ ABlock cst2ast(Block b) {
 
 AExpr cst2ast(Expr e) {
   switch (e) {
-    case (Expr) `<Int i>` : return \int(\int(toInt("<i>")));
+    case (Expr) `<Int i>` : return \int(toInt("<i>"));
     case (Expr) `<Id x>`: return ref(id("<x>", src=x@\loc), src=x@\loc);
     case (Expr) `<Bool b>`: return \bool(\bool("<b>"));
     case (Expr) `(<Expr e>)`: return B(cst2ast(e));

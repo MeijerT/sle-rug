@@ -46,11 +46,9 @@ data AExpr(loc src = |tmp:///|) //can we leave bracket?
 data AId(loc src = |tmp:///|) = id(str name);
 data AInt(loc src = |tmp:///|) = \int(int integer);
 
-data AType(loc src = |tmp:///|)
-  = \type(str name);
+data AType(loc src = |tmp:///|) = \type(str name);
 
-data ABool(loc src = |tmp:///|)
-  = \bool(str boolean);
+data ABool(loc src = |tmp:///|) = \bool(str boolean);
 
 /*data AInt(loc src = |tmp:///|)
   = \int(str integer);*///hangt af van cst2ast

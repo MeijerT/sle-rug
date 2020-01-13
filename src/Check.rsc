@@ -7,6 +7,10 @@ import IO;
 
 import List;
 
+import CST2AST;
+import ParseTree;
+import Syntax;
+
 data Type
   = tint()
   | tbool()
@@ -30,6 +34,15 @@ TEnv collect(AForm f) {
   return r;
 }
 
+set[Message] testcheck(loc q) {
+  aq = cst2ast(parse(#start[Form], q));
+  q_tenv = collect(aq);
+  print("Type Environment:\n");
+  print(q_tenv);
+  print("\n\n");
+  return check(aq, collect(aq), resolve(aq)[2]);
+}
+
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
   //print("Regular questions:\n");
@@ -49,6 +62,7 @@ set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
     if (ae_type != tbool()) {
       msgs += {error("Expected boolean expression, but got something else", ae.src)};
     }
+    msgs += check(ae, tenv, useDef);
   }
   // produce an error if there are declared questions with the same name but different types.
 
@@ -91,10 +105,14 @@ set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType 
     msgs += {warning("Duplicate question", q)};
   }
   //the declared type computed questions should match the type of the expression.
+  Type to = typeOf(ae, tenv, useDef);
   msgs += {error("Type of question does not match type of expression", ai.src)
-   | (at.name == "integer" && typeOf(ae, tenv, useDef) != tint())
-   || (at.name == "boolean" && typeOf(ae, tenv, useDef) != tbool()) };
-   
+   | to != str2type(at.name)};
+  print("Question " + label + " has type ");
+  print(to);
+  print(" instead of ");
+  print(str2type(at.name));
+  print(".\n");
   // produce an error if there are declared questions with the same name but different types.
   //[d | <d, _, l, _> <- tenv, l == label];
   msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai == n, at != t};
@@ -103,57 +121,79 @@ set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType 
   return msgs;
 }
 
+Type str2type(str s) {
+  switch (s) {
+    case "boolean":
+      return tbool();
+    case "integer":
+      return tint();
+    case "string":
+      return tstr();
+    default:
+      return tunknown();
+  }
+}
+
 // Check operand compatibility with operators.
 // E.g. for an addition node add(lhs, rhs), 
-//   the requirement is that typeOf(lhs) == typeOf(rhs) == tint()
+//   the requirement is that typeOf(lhs, tenv, useDef) == typeOf(rhs, tenv, useDef) == tint()
 set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
-  
   switch (e) {
-    case ref(str x, src = loc u):
-      msgs += { error("Undeclared question", u) | useDef[u] == {} };
-    
+    case ref(AId x): {
+      print("here\n");
+      msgs += { error("Undeclared question", e.src) | useDef[e.src] == {} };
+      if (size([<_,"<x>",_,_> <- tenv]) == 0) {
+        msgs += {error("Undeclared variable", e.src)};
+      };
+    }
     case notExpr(AExpr e):
-      msgs += { error("Not type compatible", e) | typeOf(e, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(e, tenv, useDef) != tbool() };
     case negExpr(AExpr e):
-      msgs += { error("Not type compatible", e) | typeOf(e, tenv, useDef) != tint() };
+      msgs += { error("Not type compatible", e.src) | typeOf(e, tenv, useDef) != tint() };
     case mul(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tint() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tint() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tint() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tint() };
     case div(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tint() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tint() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tint() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tint() };
     case add(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tint() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tint() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tint() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tint() };
     case sub(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tint() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tint() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tint() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tint() };
     
     case gt(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tbool() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tbool() };
     case lt(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tbool() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tbool() };
     case leq(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tbool() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tbool() };
     case geq(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tbool() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tbool() };
     case eq(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tbool() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tbool() };
     case neq(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tbool() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tbool() };
     case and(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tbool() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tbool() };
     case or(AExpr lhs, AExpr rhs):
-      msgs += { error("Not type compatible", e) | typeOf(lhs, tenv, useDef) != tbool() }
-      + { error("Not type compatible", e) | typeOf(rhs, tenv, useDef) != tbool() };
+      msgs += { error("Not type compatible", e.src) | typeOf(lhs, tenv, useDef) != tbool() }
+      + { error("Not type compatible", e.src) | typeOf(rhs, tenv, useDef) != tbool() };
+    
+    default: {
+      print("Did not recognize expression: ");
+      print(e.src);
+      print("\n");
+    }
   }
   
   return msgs; 
@@ -161,19 +201,22 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
 
 Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
   switch (e) {
-    case ref(str x, src = loc u):  
-      if (<u, loc d> <- useDef, <d, x, _, Type t> <- tenv) {
-        if (t == "boolean") {
+    case ref(AId x): {
+      loc x_loc = e.src;
+      if (<x_loc, d> <- useDef, <loc d, "<x>", _, AType t> <- tenv) {
+        if ("<t>" == "boolean") {
         	return tbool();
-        } else if (t == "integer") {
+        } else if ("<t>" == "integer") {
         	return tint();
-        } else if (t == "string") {
+        } else if ("<t>" == "string") {
         	return tstr();
         };
         return tunkown();
       } else {
+        print("Did not find variable\n");
         return tunknown();
       }
+    }
     // etc.
     case \bool(ABool b):
       return tbool();
@@ -181,11 +224,11 @@ Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
       return tint();
     
     case notExpr(AExpr e):
-      return TypeOf(e);
+      return typeOf(e, tenv, useDef);
     case negExpr(AExpr e):
-      return TypeOf(e);
+      return typeOf(e, tenv, useDef);
     case mul(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tint() && TypeOf(rhs) == tint()) {
+      if (typeOf(lhs, tenv, useDef) == tint() && typeOf(rhs, tenv, useDef) == tint()) {
       	println(rhs);
       	return tint();
       } else {
@@ -194,68 +237,68 @@ Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
         return tunknown();
       }
     case div(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tint() && TypeOf(rhs) == tint()) {
+      if (typeOf(lhs, tenv, useDef) == tint() && typeOf(rhs, tenv, useDef) == tint()) {
       	return tint();
       } else {
         return tunknown();
       }
     case add(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tint() && TypeOf(rhs) == tint()) {
+      if (typeOf(lhs, tenv, useDef) == tint() && typeOf(rhs, tenv, useDef) == tint()) {
       	return tint();
       } else {
         return tunknown();
       }
     case sub(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tint() && TypeOf(rhs) == tint()) {
+      if (typeOf(lhs, tenv, useDef) == tint() && typeOf(rhs, tenv, useDef) == tint()) {
       	return tint();
       } else {
         return tunknown();
       }
     
     case gt(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      if (typeOf(lhs, tenv, useDef) == tbool() && typeOf(rhs, tenv, useDef) == tbool()) {
       	return tbool();
       } else {
         return tunknown();
       }
     case lt(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      if (typeOf(lhs, tenv, useDef) == tbool() && typeOf(rhs, tenv, useDef) == tbool()) {
       	return tbool();
       } else {
         return tunknown();
       }
     case leq(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      if (typeOf(lhs, tenv, useDef) == tbool() && typeOf(rhs, tenv, useDef) == tbool()) {
       	return tbool();
       } else {
         return tunknown();
       }
     case geq(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      if (typeOf(lhs, tenv, useDef) == tbool() && typeOf(rhs, tenv, useDef) == tbool()) {
       	return tbool();
       } else {
         return tunknown();
       }
     case eq(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      if (typeOf(lhs, tenv, useDef) == tbool() && typeOf(rhs, tenv, useDef) == tbool()) {
       	return tbool();
       } else {
         return tunknown();
       }
     case neq(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      if (typeOf(lhs, tenv, useDef) == tbool() && typeOf(rhs, tenv, useDef) == tbool()) {
       	return tbool();
       } else {
         return tunknown();
       }
     case and(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      if (typeOf(lhs, tenv, useDef) == tbool() && typeOf(rhs, tenv, useDef) == tbool()) {
       	return tbool();
       } else {
         return tunknown();
       }
     case or(AExpr lhs, AExpr rhs):
-      if (TypeOf(lhs) == tbool() && TypeOf(rhs) == tbool()) {
+      if (typeOf(lhs, tenv, useDef) == tbool() && typeOf(rhs, tenv, useDef) == tbool()) {
       	return tbool();
       } else {
         return tunknown();
@@ -276,6 +319,3 @@ Type typeOf(AExpr e, TEnv tenv, UseDef useDef) {
  * default Type typeOf(AExpr _, TEnv _, UseDef _) = tunknown();
  *
  */
- 
- 
-
