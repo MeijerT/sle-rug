@@ -2,6 +2,7 @@ module Compile
 
 import AST;
 import Resolve;
+import Eval;
 import IO;
 import lang::html5::DOM; // see standard library
 
@@ -24,9 +25,56 @@ void compile(AForm f) {
 }
 
 HTML5Node form2html(AForm f) { 
-  return html();
+  HTML5Node htmlqs = section();
+  for(qs <- f.questions) {
+  	htmlqs = section(htmlqs, questions2html(qs));
+  }
+  return html(head(title("<f.name>")), body(
+  	form(id(f.name),
+  		li(htmlqs),
+  		button("Get Value", \type("button"), onclick("getElementById(\"result\").innerHTML = \"click\"")),
+  		p("hallo", id("result")),
+  		script(src(<f.src[extension="js"].top>))
+  	)
+  ));
+}
+
+HTML5Node questions2html(AQuestion question) {
+  switch(question) {
+	case ifquestion(AExpr ae, ABlock b):
+		switch(b) {
+			case ifblock(list[AQuestion] \if): 
+			  if(/*eval(ae) == "true"*/ false) {
+				for(qs <- \if) return questions2html(qs);
+			  } else {
+			  	return section(hidden("<ae>"));
+			  }
+			case ifelseblock(list[AQuestion] \if, list[AQuestion] \else):
+			  if(/*eval(ae) == "true"*/ true) {
+				for(qs <- \if) return questions2html(qs);
+			  } else {
+				for(qs <- \else) return questions2html(qs);
+			  }
+		}
+	case question(str q, AId ai, AType at):
+	  if(at.name == "integer") {   
+	  	return li(label("<q>"), input(\type("number"), name(ai.name), id(ai.name)));
+	  } else if (at.name == "boolean") {
+	  	return li(label("<q>"), input(\type("radio"), name(ai.name), id(ai.name), \value("yes")), "yes", input(\type("radio"), name(ai.name), id(ai.name), \value("no")), "no");
+	  } else {
+	  	return li(label("<q>"), input(name(ai.name), id(ai.name)));
+	  }
+	case compquestion(str q, AId ai, AType at, AExpr ae): 
+	  return li(label("<q>"), p(/*<eval(ae)>*/"answer:"));
+	}
 }
 
 str form2js(AForm f) { //string templates
-  return "";
+  return "function getInputs() {
+  		 '  document.getElementById(\"result\").innerHTML = \"clicked\";	
+  		 ' <for(/question(str q, AId ai, AType t) := f){>
+  		 '	 var <ai.name>value = document.getElementById(<ai.name>).value;
+  		 '<}>
+  		 '}
+  		 ";
 }
