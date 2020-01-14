@@ -14,14 +14,15 @@ start syntax Form
 syntax Question
   = Str string Id name ":" Type t
   | Str string Id name ":" Type t "=" Expr expr //computed question
-  | "if ("Expr expression") {" Block block "}"
+  > "if ("Expr expression") {" Question* if "}" !>> "else"
+  | "if ("Expr expression") {" Question* if "}" "else" "{" Question* else "}"
   ; 
 
-syntax Block
+/*syntax Block
   = Question* thenpart
   | Question* ifpart"}" "else" "{" Block elsepart
   ;
-
+*/
 // TODO: +, -, *, /, &&, ||, !, >, <, <=, >=, ==, !=, literals (bool, int, str)
 // Think about disambiguation using priorities and associativity
 // and use C/Java style precedence rules (look it up on the internet)

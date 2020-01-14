@@ -25,18 +25,14 @@ void compile(AForm f) {
 }
 
 HTML5Node form2html(AForm f) { 
-  HTML5Node htmlqs = section();
-  for(qs <- f.questions) {
-  	htmlqs = section(htmlqs, questions2html(qs));
-  }
-  return html(head(title("<f.name>")), body(
-  	form(id(f.name),
-  		li(htmlqs),
-  		button("Get Value", \type("button"), onclick("getElementById(\"result\").innerHTML = \"click\"")),
-  		p("hallo", id("result")),
-  		script(src(<f.src[extension="js"].top>))
-  	)
-  ));
+
+  return html(head(title("<f.name>")), 
+  		body(
+  			div(id(f.name),
+  				div([question2html(q) | AQuestion q <- f.questions])
+  			),
+  			script(src(<f.src[extension="js"].file>))
+  		));
 }
 
 HTML5Node questions2html(AQuestion question) {

@@ -25,18 +25,19 @@ AQuestion cst2ast(Question q) {
   switch (q) {
     case (Question)`<Str q1> <Id x> : <Type t>`: return question("<q1>", id("<x>", src=x@\loc), cst2ast(t));
     case (Question)`<Str q1> <Id x> : <Type t> = <Expr e>`: return compquestion("<q1>", id("<x>", src=x@\loc), cst2ast(t), cst2ast(e));
-    case (Question) `if (<Expr e>) { <Block b> }`: return ifquestion(cst2ast(e), cst2ast(b));
+    case (Question)`if (<Expr e>) { <Question* ifpart> }`: return ifquestion(cst2ast(e), [cst2ast(qq) | qq <- ifpart]);
+    case (Question)`if ( <Expr e> ) { <Question* ifpart> } else { <Question* elsepart> }`: return ifelsequestion(cst2ast(e),[cst2ast(qq) | qq <- ifpart], [cst2ast(qq) | qq <- elsepart]);
     default: throw "Unhandled expression: <e>";
   }
 }
 
-ABlock cst2ast(Block b) {
+/*ABlock cst2ast(Block b) {
   switch (b) {
   	case (Block) `<Question* ifpart> } else { <Question* elsepart>`: return ifelseblock([cst2ast(q) | q <- ifpart], [cst2ast(q) | q <- elsepart]);
   	case (Block) `<Question* qs>`: return ifblock([cst2ast(q) | q <- qs]); //list of questions??
   	default: throw "Unhandled expression: <e>";
   }
-}
+}*/
 
 AExpr cst2ast(Expr e) {
   switch (e) {

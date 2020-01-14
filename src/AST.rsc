@@ -14,13 +14,14 @@ data AForm(loc src = |tmp:///|)
 data AQuestion(loc src = |tmp:///|)
   = question(str q, AId ai, AType at)
   | compquestion(str q, AId ai, AType at, AExpr ae)
-  | ifquestion(AExpr check, ABlock block)
+  | ifquestion(AExpr check, list[AQuestion] ifpart)
+  | ifelsequestion(AExpr check, list[AQuestion] ifpart, list[AQuestion] elsepart)
   ; 
 
-data ABlock(loc src = |tmp:///|)
+/*data ABlock(loc src = |tmp:///|)
   = ifblock(list[AQuestion] questions)
   | ifelseblock(list[AQuestion] \if, list[AQuestion] \else) 
-  ;
+  ;*/
 
 data AExpr(loc src = |tmp:///|) //can we leave bracket?
   = ref(AId id)
