@@ -29,6 +29,7 @@ syntax Expr
   = id: Id i \ "true" \ "false"
   | \bool: Bool b//??
   | \int: Int integer
+  | \str: Str string
   | bracket B: "("Expr e")"
   | neg: "-"Expr e
   | not: "!"Expr e

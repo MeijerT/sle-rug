@@ -26,6 +26,7 @@ data AExpr(loc src = |tmp:///|) //can we leave bracket?
   = ref(AId id)
   | \bool(ABool boolean)
   | \int(AInt integer)
+  | \str(AStr string)
   | B(AExpr e)
   | notExpr(AExpr e) //"!"Expr
   | negExpr(AExpr e) //"-" Expr
@@ -45,6 +46,7 @@ data AExpr(loc src = |tmp:///|) //can we leave bracket?
 
 data AId(loc src = |tmp:///|) = id(str name);
 data AInt(loc src = |tmp:///|) = \int(int integer);
+data AStr(loc src = |tmp:///|) = \str(str string);
 
 data AType(loc src = |tmp:///|) = \type(str name);
 

@@ -9,6 +9,13 @@ import Resolve;
  
 // NB: Eval may assume the form is type- and name-correct.
 
+import IO;
+
+import List;
+
+import CST2AST;
+import ParseTree;
+import Syntax;
 
 // Semantic domain for expressions (values)
 data Value
@@ -23,6 +30,12 @@ alias VEnv = map[str name, Value \value];
 // Modeling user input
 data Input
   = input(str question, Value \value);
+
+VEnv testeval() {
+  AForm atax = cst2ast(parse(#start[Form],|project://SLE/examples/test.myql|));
+  return eval(atax, input("\"mijn vraag?\"", vstr("sfasfef?")), initialEnv(atax));
+}
+
   
 // produce an environment which for each question has a default value
 // (e.g. 0 for int, "" for str etc.)
@@ -31,15 +44,19 @@ VEnv initialEnv(AForm f) {
   for (/question(str q, AId i, AType t) := f) {
     if (t.name == "integer") {
       m = (i.name:\vint(0)) + m;
-    } else {
+    } else if (t.name == "boolean") {
       m = (i.name:\vbool(false)) + m;
+    } else {
+      m = (i.name:\vstr("")) + m;
     }
   }
   for (/compquestion(str q, AId i, AType t, AExpr ae) := f) {
     if (t.name == "integer") {
       m = (i.name:\vint(0)) + m;
-    } else {
+    } else if (t.name == "boolean") {
       m = (i.name:\vbool(false)) + m;
+    } else {
+      m = (i.name:\vstr("")) + m;
     }
   }
   return m;
@@ -55,26 +72,53 @@ VEnv eval(AForm f, Input inp, VEnv venv) {
 }
 
 VEnv evalOnce(AForm f, Input inp, VEnv venv) {//not sure what we need to do here
-  return ();
+  map[str name, Value \value] m = ();
+  for (/question(str q, AId ai, AType at) := f) {
+    if (inp.question == q) {
+      return m = eval(question(q, ai, at), inp, venv) + m;
+  	}
+  }
+  for (/compquestion(str q, AId ai, AType at, AExpr ae) := f) {
+    if (inp.question == q) {
+  	  return m = eval(compquestion(q, ai, at, ae), inp, venv) + m;
+  	}
+  }
+  for (/ifquestion(AExpr ae, ABlock ab) := f) {
+  	m += eval(ifquestion(ae, ab), inp, venv);
+  }
+  return m;
 }
 
 VEnv eval(AQuestion q, Input inp, VEnv venv) {
   // evaluate conditions for branching,
   // evaluate inp and computed questions to return updated VEnv
-  map[str name, Value \value] m = ();
+  map[str name, Value v] m = ();
   switch(q) {
-    case question(str label, AId aid, AType at):
-      if(at.name == "integer") {
-      	m = (aid.name : inp.\value.n) + m;
-      } else {
-      	//boolean
-      	m = (aid.name : inp.\value.b) + m;
+    case question(str label, AId aid, AType at): {
+      if (inp.question == label) {
+        if (at.name == "integer") {
+          //integer
+      	  m = (aid.name : vint(inp.\value.n)) + m;
+        } else if (at.name == "boolean") {
+      	  //boolean
+          m = (aid.name : vbool(inp.\value.b)) + m;
+        } else {
+       	  //string
+          m = (aid.name : vstr(inp.\value.s)) + m;
+        }
       }
+    }
     case compquestion(str label, AId aid, AType at, AExpr ae):
-    	if(at.name == "integer") {
-      	m = (aid.name : eval(ae, venv).\value.n) + m;
-      } else {
-      	m = (aid.name : eval(ae, venv).\value.b) + m;
+      if (inp.question == label) {
+        if (at.name == "integer") {
+      	  m = (aid.name : vint(inp.\value.n)) + m;
+        } else if (at.name == "boolean") {
+      	  //boolean
+          m = (aid.name : vbool(inp.\value.b)) + m;
+        } else {
+          //string
+          m = (aid.name : vstr(inp.\value.s)) + m;
+        }
       }
     case ifquestion(AExpr ae, ABlock b):
       if (eval(ae, venv).b) {
