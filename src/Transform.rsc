@@ -48,18 +48,19 @@ AForm flatten(AForm f) {
  */
  
 start[Form] testrename() {
-  f = parse(#start[Form], |project://SLE/examples/cyclic.myql|);
+  f = parse(#start[Form], |project://sle-rug/examples/cyclic.myql|);
   AForm af = cst2ast(f);
-  return rename(f, |project://SLE/examples/cyclic.myql|(154,12,<8,6>,<8,18>), "test", resolve(af));
+  return rename(f, |project://sle-rug/examples/cyclic.myql|(154,12,<8,6>,<8,18>), "test", resolve(af));
 }
 
 bool compareLocs(str oldName, RefGraph rg, loc x) {
-  if (<oldName, loc def> <- rg.defs, def == x) {
-    return true;
-  } else if (<use, oldName> <- rg.uses, loc use := x, <use, def> <- rg.useDef) {
+  if (x in rg.defs[oldName]) {
+    print("Found definition!");
     return true;
   }
-  print("it was false\n");
+  if (oldName in rg.uses[x]) {
+    return true;
+  }
   return false;
 }
  
@@ -77,7 +78,13 @@ start[Form] rename(start[Form] f, loc useOrDef, str newName, RefGraph rg) {
   return visit (f) {
     case (Expr) `<Id x>` => (Expr) `<Id newName2>`
     when
-    	compareLocs(oldName, rg, x@\loc)
+      compareLocs(oldName, rg, x@\loc)
+    case (Question) `<Str q1> <Id x> : <Type t>` => (Question) `<Str q1> <Id newName2> : <Type t>`
+    when
+      compareLocs(oldName, rg, x@\loc)
+    case (Question )`<Str q1> <Id x> : <Type t> = <Expr e>` => (Question) `<Str q1> <Id newName2> : <Type t> = <Expr e>`
+    when
+      compareLocs(oldName, rg, x@\loc)
     default:
       ;
    }
