@@ -1,10 +1,12 @@
 form taxOfficeExample {
+"Q1" a: boolean = true
 if (true) {
+"Q2" b: string
 if (true) {
-"Did you sell a house in 2010?"
-hasSoldHouse: boolean
-"Did you sell a house in 2011?"
-hasSoldHouse2: boolean
+"Q3" c: boolean
+"Q4" d: boolean = c && a
 }
+"Q5" e: string
 }
+"Q6" f: integer
 }
