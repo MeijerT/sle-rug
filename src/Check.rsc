@@ -47,35 +47,27 @@ Type atype2type(AType t) {
 
 set[Message] testcheck(loc q) {
   aq = cst2ast(parse(#start[Form], q));
-  //q_tenv = collect(aq);
-  //print("Type Environment:\n");
-  //print(q_tenv);
-  //print("\n\n");
   return check(aq, collect(aq), resolve(aq)[2]);
 }
 
 set[Message] check(AForm f, TEnv tenv, UseDef useDef) {
   set[Message] msgs = {};
-  //print("Regular questions:\n");
+  
   for (/question(str q, AId ai, AType at) := f) {
-    print(q + "\n");
   	msgs += dupl(tenv, useDef, q, ai.src, ai, at);
   }
-  //print("Computed questions:\n");
+  
   for (/compquestion(str q, AId ai, AType at, AExpr ae) := f) {
-    //print(q + "\n");
     msgs += duplcomp(tenv, useDef, q, ai.src, ai, at, ae);
   }
   
   for (/ifquestion(AExpr ae, _) := f) {
-    //print(q + "\n");
     CType ae_type = typeOf(ae, tenv, useDef);
     if (ae_type != tbool() && ae_type != tunknown()) {
       msgs += {error("Expected boolean expression, but got something else", ae.src)};
     }
     msgs += check(ae, tenv, useDef);
   }
-  // produce an error if there are declared questions with the same name but different types.
 
   return msgs;
 }
@@ -98,18 +90,18 @@ set[Message] check(AQuestion q, TEnv tenv, UseDef useDef) {
 }
 
 set[Message] dupl(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType at) {
-  //print("Checking duplicates for a regular question\n");
+  
   set[Message] msgs = {};
   list[loc] labeloccs = [d | <d, _, l, _> <- tenv, l == label];
   if (size(labeloccs) > 1) {
     msgs += warning("Duplicate question", q);
   }
-  msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai == n, at != t};
+  msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai.name == n, str2type(at.name) != t, d != q};
   return msgs;
 }
 
 set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType at, AExpr ae) {
-  //print("Checking duplicates for a computed question\n");
+  
   set[Message] msgs = {};
   list[loc] labeloccs = [d | <d, _, l, _> <- tenv, l == label];
   if (size(labeloccs) > 1) {
@@ -119,9 +111,9 @@ set[Message] duplcomp(TEnv tenv, UseDef useDef, str label, loc q, AId ai, AType 
   CType to = typeOf(ae, tenv, useDef);
   msgs += {error("Type of question does not match type of expression. Expected: " + at.name + ", got: " + ctype2str(to), ai.src)
    | to != str2type(at.name)};
+   
   // produce an error if there are declared questions with the same name but different types.
-  //[d | <d, _, l, _> <- tenv, l == label];
-  msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai == n, at != t};
+  msgs += {error("Question with same name but different type", q) | <d, n, _, t> <- tenv, ai.name == n, str2type(at.name) != t, d != q};
   
   msgs += check(ae, tenv, useDef);
   return msgs;

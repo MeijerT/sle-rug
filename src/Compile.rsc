@@ -5,7 +5,9 @@ import Resolve;
 import Eval;
 import CST2AST;
 import ParseTree;
+import Check;
 import Syntax;
+import Transform;
 import IO;
 import List;
 import lang::html5::DOM; // see standard library
@@ -22,15 +24,6 @@ import lang::html5::DOM; // see standard library
  * - be sure to generate uneditable widgets for computed questions!
  * - if needed, use the name analysis to link uses to definitions
  */
- 
-void testCompile() {
-	compile(cst2ast(parse(#start[Form], |project://QL/examples/tax.myql|)));
-	compile(cst2ast(parse(#start[Form], |project://QL/examples/binary.myql|)));
-	compile(cst2ast(parse(#start[Form], |project://QL/examples/cyclic.myql|)));
-	compile(cst2ast(parse(#start[Form], |project://QL/examples/errors.myql|)));
-	compile(cst2ast(parse(#start[Form], |project://QL/examples/empty.myql|)));
-	compile(cst2ast(parse(#start[Form], |project://QL/examples/test.myql|)));
-}
 
 void compile(AForm f) {
   writeFile(f.src[extension="js"].top, form2js(f));
@@ -61,8 +54,8 @@ HTML5Node questions2html(AQuestion question) {
 	
 	case ifelsequestion(AExpr ae, list[AQuestion] ifpart, list[AQuestion] elsepart):
 	  return div( 
-	  div([questions2html(q) | AQuestion q <- ifpart]), 
-	  div([questions2html(q) | AQuestion q <- elsepart])
+	  div([id("ifpart" + expr2js(ae))] + [questions2html(q) | AQuestion q <- ifpart]), 
+	  div([id("elsepart" + expr2js(ae))] + [questions2html(q) | AQuestion q <- elsepart])
 	  );
 	
 	case question(str q, AId ai, AType at):
@@ -102,15 +95,13 @@ str defaultValues(AType t) {
 }
 
 str form2js(AForm f) {
-  list[str] initVars = [];
-  initVars += ["var <ai.name> = document.getElementById(\'input<ai.name>\').<getPropertyName(t)>;" 
+  list[str] formjs = [];
+  formjs += ["var <ai.name> = document.getElementById(\'input<ai.name>\').<type2prop(t)>;" 
            | /question(_, AId ai, AType t) := f];
   
-  initVars += ["//variable <ai.name>:
-				document.getElementById(\'input<ai.name>\').<getPropertyName(t)> = <expr2js(ae)>;" 
+  formjs += ["//variable <ai.name>:
+				document.getElementById(\'input<ai.name>\').<type2prop(t)> = <expr2js(ae)>;" 
            		| /compquestion(_, AId ai, AType t, AExpr ae) := f];
-  
-  //initVars += ["document.getElementById(\"elsevisible\").display  = \"none\""];
 
   return 
 		"document.addEventListener(\'input\', function (evt) {
@@ -118,7 +109,7 @@ str form2js(AForm f) {
 		});
 		updateForm();
 		function updateForm() {
-		'	<intercalate("\n", initVars + [form2js(q) | q <- f.questions])>
+		'	<intercalate("\n", formjs + [form2js(q) | q <- f.questions])>
 		}";
 }
 
@@ -138,6 +129,8 @@ str form2js(ifquestion(AExpr check, list[AQuestion] ifpart)) {
 str form2js(ifelsequestion(AExpr check, list[AQuestion] ifpart, list[AQuestion] elsepart)) {
   return 
 "if (<expr2js(check)>) {
+'	document.getElementById(\'ifpart<expr2js(check)>\').style.display = \"\";
+'	document.getElementById(\'elsepart<expr2js(check)>\').style.display = \"none\";
 '  <for(q <- ifpart) {> 
 '	<form2js(q, visible=true)>
 '   <}>
@@ -145,6 +138,8 @@ str form2js(ifelsequestion(AExpr check, list[AQuestion] ifpart, list[AQuestion] 
 '	<form2js(q, visible=false)>
 '   <}>
 } else {
+'	document.getElementById(\'ifpart<expr2js(check)>\').style.display = \"none\";
+'	document.getElementById(\'elsepart<expr2js(check)>\').style.display = \"\";
 '  <for(q <- ifpart) {> 
 '	<form2js(q, visible=false)>
 '   <}>
@@ -162,7 +157,7 @@ str form2js(compquestion(str label, AId id, AType tp, AExpr ae), bool visible = 
   return "document.getElementById(\'<id.name>\').style.display = <visible ? "\"\"" : "\"none\"">;";
 }
 
-str getPropertyName(AType t) {
+str type2prop(AType t) {
   if(t.name == "boolean") {
     return "checked";
    } else {
@@ -183,10 +178,10 @@ str expr2js(AExpr e) {
     case B(AExpr expr):
       return "(<expr2js(expr)>)";
     
-    case not(AExpr expr):
+    case notExpr(AExpr expr):
       return "(!<expr2js(expr)>)"; 
       
-    case neg(AExpr expr):
+    case negExpr(AExpr expr):
       return "(-<expr2js(expr)>)";
       
     case mul(AExpr lhs, AExpr rhs):

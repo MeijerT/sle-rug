@@ -31,11 +31,20 @@ alias VEnv = map[str name, Value \value];
 data Input
   = input(str question, Value \value);
 
-VEnv testeval() {
-  AForm atax = cst2ast(parse(#start[Form],|project://QL/examples/tax.myql|));
-  return eval(atax, input("\"Did you sell a house in 2010?\"", vbool(true)), initialEnv(atax));
+VEnv testeval(loc ql, str q, int n) {
+  AForm f = cst2ast(parse(#start[Form],ql));
+  return eval(f, input(q, vint(n)), initialEnv(f));
 }
 
+VEnv testeval(loc ql, str q, bool b) {
+  AForm f = cst2ast(parse(#start[Form],ql));
+  return eval(f, input(q, vbool(b)), initialEnv(f));
+}
+
+VEnv testeval(loc ql, str q, str s) {
+  AForm f = cst2ast(parse(#start[Form],ql));
+  return eval(f, input(q, vstr(s)), initialEnv(f));
+}
   
 // produce an environment which for each question has a default value
 // (e.g. 0 for int, "" for str etc.)
