@@ -18,16 +18,11 @@ data AQuestion(loc src = |tmp:///|)
   | ifelsequestion(AExpr check, list[AQuestion] ifpart, list[AQuestion] elsepart)
   ; 
 
-/*data ABlock(loc src = |tmp:///|)
-  = ifblock(list[AQuestion] questions)
-  | ifelseblock(list[AQuestion] \if, list[AQuestion] \else) 
-  ;*/
-
 data AExpr(loc src = |tmp:///|) //can we leave bracket?
   = ref(AId id)
-  | \bool(ABool boolean)
-  | \int(AInt integer)
-  | \str(AStr string)
+  | \bool(bool boolean)
+  | \int(int integer)
+  | \str(str string)
   | B(AExpr e)
   | notExpr(AExpr e) //"!"Expr
   | negExpr(AExpr e) //"-" Expr
@@ -46,12 +41,8 @@ data AExpr(loc src = |tmp:///|) //can we leave bracket?
   ;
 
 data AId(loc src = |tmp:///|) = id(str name);
-data AInt(loc src = |tmp:///|) = \int(int integer);
-data AStr(loc src = |tmp:///|) = \str(str string);
 
 data AType(loc src = |tmp:///|) = \type(str name);
-
-data ABool(loc src = |tmp:///|) = \bool(str boolean);
 
 /*data AInt(loc src = |tmp:///|)
   = \int(str integer);*///hangt af van cst2ast

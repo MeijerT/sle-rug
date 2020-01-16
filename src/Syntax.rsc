@@ -44,9 +44,9 @@ syntax Expr
   ;
   
 syntax Primary
-  = Bool
-  | Int
-  | Str
+  = Bool name
+  | Int name
+  | Str name
   | Id \ "true" \ "false" // true/false are reserved keywords.
   ;
  

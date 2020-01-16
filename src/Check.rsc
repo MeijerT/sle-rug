@@ -161,15 +161,15 @@ set[Message] check(AExpr e, TEnv tenv, UseDef useDef) {
       msgs += { error("Undefined variable", e.src) | useDef[e.src] == {} };
     }
     
-    case \int(AInt e): {
+    case \int(int e): {
       return msgs;
     }
     
-    case \bool(ABool e): {
+    case \bool(bool e): {
       return msgs;
     }
     
-    case \str(AStr e): {
+    case \str(str e): {
       return msgs;
     }
     
@@ -240,11 +240,11 @@ CType typeOf(AExpr e, TEnv tenv, UseDef useDef) {
       }
     }
     // etc.
-    case \bool(ABool b):
+    case \bool(bool b):
       return tbool();
-    case \int(AInt i):
+    case \int(int i):
       return tint();
-    case \str(AStr s):
+    case \str(str s):
       return tstr();
     
     case B(AExpr e):

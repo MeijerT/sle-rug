@@ -32,8 +32,8 @@ data Input
   = input(str question, Value \value);
 
 VEnv testeval() {
-  AForm atax = cst2ast(parse(#start[Form],|project://SLE/examples/test.myql|));
-  return eval(atax, input("\"mijn vraag?\"", vstr("sfasfef?")), initialEnv(atax));
+  AForm atax = cst2ast(parse(#start[Form],|project://QL/examples/tax.myql|));
+  return eval(atax, input("\"Did you sell a house in 2010?\"", vbool(true)), initialEnv(atax));
 }
 
   
@@ -142,6 +142,12 @@ VEnv eval(AQuestion q, Input inp, VEnv venv) {
 Value eval(AExpr e, VEnv venv) {
   switch (e) {
     case ref(str x): return venv[x];
+    
+    case \int(int n): return vint(n);
+    
+    case \bool(bool b): return vbool(b);
+    
+    case \str(str s): return vstr(s);
     
     case notExpr(AExpr e): 
     	if(eval(e, venv).b) { 

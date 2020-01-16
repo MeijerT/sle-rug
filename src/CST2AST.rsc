@@ -5,6 +5,7 @@ import AST;
 
 import ParseTree;
 import String;
+import Boolean;
 
 /*
  * Implement a mapping from concrete syntax trees (CSTs) to abstract syntax trees (ASTs)
@@ -31,20 +32,12 @@ AQuestion cst2ast(Question q) {
   }
 }
 
-/*ABlock cst2ast(Block b) {
-  switch (b) {
-  	case (Block) `<Question* ifpart> } else { <Question* elsepart>`: return ifelseblock([cst2ast(q) | q <- ifpart], [cst2ast(q) | q <- elsepart]);
-  	case (Block) `<Question* qs>`: return ifblock([cst2ast(q) | q <- qs]); //list of questions??
-  	default: throw "Unhandled expression: <e>";
-  }
-}*/
-
 AExpr cst2ast(Expr e) {
   switch (e) {
-    case (Expr) `<Int i>` : return \int(\int(toInt("<i>"), src=i@\loc));
+    case (Expr) `<Int i>` : return \int(toInt("<i>"), src=i@\loc);
     case (Expr) `<Id x>`: return ref(id("<x>", src=x@\loc), src=x@\loc);
-    case (Expr) `<Bool b>`: return \bool(\bool("<b>"), src=b@\loc);
-    case (Expr) `<Str s>`: return \str(\str("<s>"), src=s@\loc);
+    case (Expr) `<Bool x>`: return \bool(fromString("<x>"), src=x@\loc);
+    case (Expr) `<Str s>`: return \str(s, src=s@\loc);
     case (Expr) `(<Expr e>)`: return B(cst2ast(e), src=e@\loc);
     case (Expr) `!<Expr e>`: return notExpr(cst2ast(e), src=e@\loc);
     case (Expr) `-<Expr e>`: return negExpr(cst2ast(e), src=e@\loc);
@@ -69,14 +62,6 @@ AType cst2ast(Type t) {
     case (Type) `boolean`: return \type("boolean");
     case (Type) `integer`: return \type("integer");
     case (Type) `string`: return \type("string");
-    default: throw "Unhandled expression: <e>";
-  }
-}
-
-ABool cst2ast(Bool b) {
-  switch (b) {
-    case (Bool) `true`: return \type("true");
-    case (Bool) `false`: return \type("false");
     default: throw "Unhandled expression: <e>";
   }
 }
